@@ -1,10 +1,9 @@
-from abc import ABC
 import xml.etree.ElementTree as ET
 import pandas as pd
 import os
 
 
-class XML(ABC):
+class XML:
     """
     path: str
         abspath to gar_xml/93/
@@ -16,9 +15,9 @@ class XML(ABC):
     def _parse_xml(self, filename) -> pd.DataFrame:
         """
         Make XML file into a pandas dataframe (df)
-        filename: str
+        filename (abspath): str
         """
-        tree = ET.parse(os.path.join(self._path, filename))
+        tree = ET.parse(filename)
         root = tree.getroot()
         df = [child.attrib for child in root]
         df = pd.DataFrame.from_dict(df)
@@ -40,7 +39,9 @@ class XML(ABC):
                 filename = os.path.join(self._path, file)
                 break
         else:
-            raise f'Looks like there is no {start} file in directory'
+            raise FileNotFoundError(
+                    f'Looks like there is no {start} file in directory'
+                    )
         return filename
 
 
@@ -61,7 +62,7 @@ class HierarchyAggregator(XML):
         df = self._aggregate_reestr_obj()
         return df.groupby(
                 'LEVELID'
-                )['OBJECTID'].apply(list).reset_index(name='OBJECTID_list')
+                )['OBJECTID'].apply(list).to_frame()
 
     def aggregate_objid_to_lvl(self):
         """
@@ -69,7 +70,7 @@ class HierarchyAggregator(XML):
            pd.Dataframe[objectid, levelid]
         """
         df = self._aggregate_reestr_obj()
-        return df.set_index('OBJECTID')['LEVELID'].to_frame().reset_index()
+        return df.set_index('OBJECTID')['LEVELID'].to_frame()
 
     def aggregate_adm_hierarchy(self) -> dict:
         """
@@ -78,9 +79,9 @@ class HierarchyAggregator(XML):
         """
         file_path = self._get_filename('AS_ADM_HIERARCHY')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['PATH'].apply(
-                        lambda x: x.split('.')
-                        ).to_frame().reset_index()
+        return df.set_index(
+                'OBJECTID'
+                )['PATH'].str.split('.').to_frame()
 
     def aggregate_mun_hierarchy(self) -> dict:
         """
@@ -89,9 +90,9 @@ class HierarchyAggregator(XML):
         """
         file_path = self._get_filename('AS_MUN_HIERARCHY')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['PATH'].apply(
-                        lambda x: x.split('.')
-                        ).to_frame().reset_index()
+        return df.set_index(
+                'OBJECTID'
+                )['PATH'].str.split('.').to_frame()
 
 
 class AddressAggregator(XML):
@@ -108,7 +109,7 @@ class AddressAggregator(XML):
                 'NAME',
                 'TYPENAME',
                 'LEVEL'
-                ]].reset_index()
+                ]]
 
     def aggregate_houses(self):
         """
@@ -118,12 +119,12 @@ class AddressAggregator(XML):
         df = self._get_active(file_path)
         return df.set_index('OBJECTID')[[
                 'HOUSENUM',
-                'HOUSETYPE'
+                'HOUSETYPE',
                 'ADDNUM1',
                 'ADDTYPE1',
                 'ADDNUM2',
                 'ADDTYPE2'
-                ]].to_frame().reset_index()
+                ]]
 
     def aggregate_carplaces(self):
         """
@@ -131,7 +132,15 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_CARPLACES_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['NUMBER'].reset_index()
+        return df.set_index('OBJECTID')['NUMBER'].to_frame()
+
+    def aggregate_rooms(self):
+        """
+        Aggregates rooms (LEVEL 12)
+        """
+        file_path = self._get_filename('AS_ROOMS_20')
+        df = self._get_active(file_path)
+        return df.set_index('OBJECTID')[['NUMBER', 'ROOMTYPE']]
 
     def aggregate_appartments(self):
         """
@@ -142,15 +151,7 @@ class AddressAggregator(XML):
         return df.set_index('OBJECTID')[[
                 'NUMBER',
                 'APARTTYPE'
-                ]].reset_index()
-
-    def aggregate_rooms(self):
-        """
-        Aggregates rooms (LEVEL 12)
-        """
-        file_path = self._get_filename('AS_ROOMS_20')
-        df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['NUMBER'].reset_index()
+                ]]
 
     def aggregate_steads(self):
         """
@@ -158,9 +159,44 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_STEADS_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['NUMBER'].reset_index()
+        return df.set_index('OBJECTID')['NUMBER'].to_frame()
 
 
 class TypeAggregator(XML):
     def __init__(self, path):
         super().__init__(path)
+
+    def _get_active(self, filename):
+        """
+        find active values
+        """
+        return self._parse_xml(filename).query('ISACTIVE == "true"')
+
+    def aggregate_houses_types(self):
+        file_path = self._get_filename('AS_HOUSE_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_addhouses_types(self):
+        file_path = self._get_filename('AS_ADDHOUSE_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_addr_obj_types(self):
+        file_path = self._get_filename('AS_ADDR_OBJ_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME', 'LEVEL']]
+
+    def aggregate_apartment_types(self):
+        file_path = self._get_filename('AS_APARTMENT_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_object_levels(self):
+        """
+        Aggregates object leves.
+        Used for reference
+        """
+        file_path = self._get_filename('AS_OBJECT_LEVELS')
+        df = self._get_active(file_path)
+        return df.set_index('LEVEL')['NAME']
