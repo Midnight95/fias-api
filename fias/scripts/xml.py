@@ -45,6 +45,46 @@ class XML:
         return filename
 
 
+class TypeAggregator(XML):
+    def __init__(self, path):
+        super().__init__(path)
+
+    def _get_active(self, filename):
+        """
+        find active values
+        """
+        return self._parse_xml(filename).query('ISACTIVE == "true"')
+
+    def aggregate_houses_types(self):
+        file_path = self._get_filename('AS_HOUSE_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_addhouses_types(self):
+        file_path = self._get_filename('AS_ADDHOUSE_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_addr_obj_types(self):
+        file_path = self._get_filename('AS_ADDR_OBJ_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME', 'LEVEL']]
+
+    def aggregate_apartment_types(self):
+        file_path = self._get_filename('AS_APARTMENT_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_object_levels(self):
+        """
+        Aggregates object leves.
+        Used for reference
+        """
+        file_path = self._get_filename('AS_OBJECT_LEVELS')
+        df = self._get_active(file_path)
+        return df.set_index('LEVEL')['NAME']
+
+
 class HierarchyAggregator(XML):
     def __init__(self, path):
         super().__init__(path)
@@ -160,43 +200,3 @@ class AddressAggregator(XML):
         file_path = self._get_filename('AS_STEADS_20')
         df = self._get_active(file_path)
         return df.set_index('OBJECTID')['NUMBER'].to_frame()
-
-
-class TypeAggregator(XML):
-    def __init__(self, path):
-        super().__init__(path)
-
-    def _get_active(self, filename):
-        """
-        find active values
-        """
-        return self._parse_xml(filename).query('ISACTIVE == "true"')
-
-    def aggregate_houses_types(self):
-        file_path = self._get_filename('AS_HOUSE_TYPES')
-        df = self._get_active(file_path)
-        return df.set_index('ID')[['NAME', 'SHORTNAME']]
-
-    def aggregate_addhouses_types(self):
-        file_path = self._get_filename('AS_ADDHOUSE_TYPES')
-        df = self._get_active(file_path)
-        return df.set_index('ID')[['NAME', 'SHORTNAME']]
-
-    def aggregate_addr_obj_types(self):
-        file_path = self._get_filename('AS_ADDR_OBJ_TYPES')
-        df = self._get_active(file_path)
-        return df.set_index('ID')[['NAME', 'SHORTNAME', 'LEVEL']]
-
-    def aggregate_apartment_types(self):
-        file_path = self._get_filename('AS_APARTMENT_TYPES')
-        df = self._get_active(file_path)
-        return df.set_index('ID')[['NAME', 'SHORTNAME']]
-
-    def aggregate_object_levels(self):
-        """
-        Aggregates object leves.
-        Used for reference
-        """
-        file_path = self._get_filename('AS_OBJECT_LEVELS')
-        df = self._get_active(file_path)
-        return df.set_index('LEVEL')['NAME']
