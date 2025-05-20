@@ -9,7 +9,8 @@ class XMLHelper(XML):
 
     def set_filename(self, filename):
         self._filename = filename
-        self._df = self._parse_xml(filename)
+        self._abspath = self._get_filename(filename)
+        self._df = self._parse_xml(self._abspath)
 
     def get_filename(self):
         return self._filename
@@ -31,14 +32,14 @@ class XMLHelper(XML):
 
     def find_level(self):
         filename = self._get_filename('AS_REESTR_OBJECTS')
-        return self._parse_xml(filename).query(
+        return self._parse_xml(self._get_filename(filename)).query(
                 f'OBJECTID == "{self._id}"'
                 )['LEVELID']
 
     def find_file(self):
         filenames = os.listdir(self._path)
         for file in filenames:
-            df = self._parse_xml(file)
+            df = self._parse_xml(self._get_filename(file))
             if df.get('OBJECTID') is None:
                 continue
             obj = df.query(f'OBJECTID == "{self._id}"')

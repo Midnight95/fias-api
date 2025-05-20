@@ -43,7 +43,7 @@ class Reestr(SQLModel, table=True):
             default=None,
             primary_key=True
             )
-    level: int = Field(foreign_key='leveltype.level')
+    levelid: int = Field(foreign_key='leveltype.level')
 
 
 class AdministrativeHierarchy(SQLModel, table=True):
