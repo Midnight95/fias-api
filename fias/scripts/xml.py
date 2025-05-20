@@ -75,7 +75,7 @@ class TypeAggregator(XML):
         df = self._get_active(file_path)
         return df.set_index('ID')[['NAME', 'SHORTNAME']]
 
-    def aggregate_object_levels(self):
+    def aggregate_level_types(self):
         """
         Aggregates object leves.
         Used for reference
@@ -92,19 +92,19 @@ class HierarchyAggregator(XML):
     def _aggregate_reestr_obj(self) -> dict:
         file_path = self._get_filename('AS_REESTR_OBJECTS')
         df = self._get_active(file_path)
-        return df[['OBJECTID', 'LEVELID']]
+        return df.set_index('ID')[['OBJECTID', 'LEVELID']]
 
-    def aggregate_lvl_to_objid(self):
-        """
-        aggregates lvlid to objectid
-           pd.Dataframe[lvlid, objectid: list[str]]
-        """
-        df = self._aggregate_reestr_obj()
-        return df.groupby(
-                'LEVELID'
-                )['OBJECTID'].apply(list).to_frame()
+#    def aggregate_lvl_to_objid(self):
+#        """
+#        aggregates lvlid to objectid
+#           pd.Dataframe[lvlid, objectid: list[str]]
+#        """
+#        df = self._aggregate_reestr_obj()
+#        return df.groupby(
+#                'LEVELID'
+#                )['OBJECTID'].apply(list).to_frame()
 
-    def aggregate_objid_to_lvl(self):
+    def aggregate_reestr(self):
         """
         aggregates objectid to levelid
            pd.Dataframe[objectid, levelid]
@@ -119,9 +119,8 @@ class HierarchyAggregator(XML):
         """
         file_path = self._get_filename('AS_ADM_HIERARCHY')
         df = self._get_active(file_path)
-        return df.set_index(
-                'OBJECTID'
-                )['PATH'].str.split('.').to_frame()
+        df['PATH'] = df['PATH'].str.split('.')
+        return df.set_index('ID')[['OBJECTID', 'PATH']]
 
     def aggregate_mun_hierarchy(self) -> dict:
         """
@@ -130,9 +129,8 @@ class HierarchyAggregator(XML):
         """
         file_path = self._get_filename('AS_MUN_HIERARCHY')
         df = self._get_active(file_path)
-        return df.set_index(
-                'OBJECTID'
-                )['PATH'].str.split('.').to_frame()
+        df['PATH'] = df['PATH'].str.split('.')
+        return df.set_index('ID')[['OBJECTID', 'PATH']]
 
 
 class AddressAggregator(XML):
@@ -145,7 +143,8 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_ADDR_OBJ_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')[[
+        return df.set_index('ID')[[
+                'OBJECTID',
                 'NAME',
                 'TYPENAME',
                 'LEVEL'
@@ -157,7 +156,8 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_HOUSES_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')[[
+        return df.set_index('ID')[[
+                'OBJECTID',
                 'HOUSENUM',
                 'HOUSETYPE',
                 'ADDNUM1',
@@ -172,7 +172,7 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_CARPLACES_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['NUMBER'].to_frame()
+        return df.set_index('ID')['OBJECTID', 'NUMBER'].to_frame()
 
     def aggregate_rooms(self):
         """
@@ -180,7 +180,7 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_ROOMS_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')[['NUMBER', 'ROOMTYPE']]
+        return df.set_index('ID')[['OBJECTID', 'NUMBER', 'ROOMTYPE']]
 
     def aggregate_appartments(self):
         """
@@ -188,7 +188,8 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_APARTMENTS_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')[[
+        return df.set_index('ID')[[
+                'OBJECTID',
                 'NUMBER',
                 'APARTTYPE'
                 ]]
@@ -199,4 +200,4 @@ class AddressAggregator(XML):
         """
         file_path = self._get_filename('AS_STEADS_20')
         df = self._get_active(file_path)
-        return df.set_index('OBJECTID')['NUMBER'].to_frame()
+        return df.set_index('ID')['OBJECTID', 'NUMBER'].to_frame()
