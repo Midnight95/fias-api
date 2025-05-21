@@ -2,7 +2,7 @@ from sqlmodel import create_engine, SQLModel, Session
 from dotenv import load_dotenv
 import os
 import fias.app.model as model
-from fias.scripts.xml import (
+from fias.scripts.parser import (
         TypeAggregator,
         HierarchyAggregator,
         AddressAggregator
@@ -65,6 +65,14 @@ def upload_types():
     with Session(engine) as session:
         for _, row in address_obj_types.iterrows():
             session.add(model.ApartmentType(**row.to_dict()))
+        session.commit()
+
+    # process room types
+    room_types = type_agg.aggregate_room_types().reset_index()
+    room_types.columns = ['id', 'name', 'shortname']
+    with Session(engine) as session:
+        for _, row in room_types.iterrows():
+            session.add(model.RoomType(**row.to_dict()))
         session.commit()
 
 
@@ -163,10 +171,12 @@ def upload_addresses():
         session.commit()
 
 
+def upload_data():
+    upload_types()
+    upload_hierarchy()
+    upload_addresses()
+
+
 def update_data(*args, **kwargs):
     # updates current db using 'delta' file
     pass
-
-
-if __name__ == '__main__':
-    create_tables()
