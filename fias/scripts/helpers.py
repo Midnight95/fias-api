@@ -1,4 +1,4 @@
-from fias.scripts.xml import XML
+from fias.scripts.parser import XML
 from random import randint
 import os
 
