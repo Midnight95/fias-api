@@ -1,18 +1,7 @@
-from dotenv import load_dotenv
-import xml.etree.ElementTree as ET
-import pymongo
-import os
-
-load_dotenv()
-
-DATABASE_URL = os.getenv('DATABASE_URL')
-GAR_XML_DIR = os.getenv('GAR_XML_DIR')
-
-clinet = pymongo.MongoClient(DATABASE_URL)
-db = clinet['fias_db']
+from fias.app.db import upload_data, create_tables
 
 
-def walk_root(dir):
-    for region in os.scandir(dir):
-        if region.is_dir():
-
+if __name__ == '__main__':
+    create_tables()
+    upload_data()
+    print('Done!')
