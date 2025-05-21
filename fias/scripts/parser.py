@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
+import numpy as np
 import os
 
 
@@ -21,6 +22,7 @@ class XML:
         root = tree.getroot()
         df = [child.attrib for child in root]
         df = pd.DataFrame.from_dict(df)
+        df = df.replace({np.nan: None})
         return df
 
     def _get_active(self, filename):
@@ -72,6 +74,11 @@ class TypeAggregator(XML):
 
     def aggregate_apartment_types(self):
         file_path = self._get_filename('AS_APARTMENT_TYPES')
+        df = self._get_active(file_path)
+        return df.set_index('ID')[['NAME', 'SHORTNAME']]
+
+    def aggregate_room_types(self):
+        file_path = self._get_filename('AS_ROOM_TYPES')
         df = self._get_active(file_path)
         return df.set_index('ID')[['NAME', 'SHORTNAME']]
 
@@ -127,7 +134,7 @@ class HierarchyAggregator(XML):
         file_path = self._get_filename('AS_MUN_HIERARCHY')
         df = self._get_active(file_path)
         df['PATH'] = df['PATH'].str.split('.')
-        return df.set_index('OBJECT')['PATH']
+        return df.set_index('OBJECTID')['PATH']
 
 
 class AddressAggregator(XML):
