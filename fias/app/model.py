@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, ARRAY, Column, Integer
+from sqlmodel import SQLModel, Field, ARRAY, Column, Integer, BigInteger
 from typing import List
 
 
@@ -10,37 +10,36 @@ class LevelType(SQLModel, table=True):
 class HouseType(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     name: str
-    shortname: str
+    shortname: str | None
 
 
 class AddhouseType(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     name: str
-    shortname: str
+    shortname: str | None
 
 
 class AddressObjectType(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     name: str
-    shortname: str
+    shortname: str | None
     level: int = Field(foreign_key='leveltype.level')
 
 
 class ApartmentType(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     name: str
-    shortname: str
+    shortname: str | None
 
 
 class RoomType(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
-    nubmer: int
-    roomtype: str
+    name: str
+    shortname: str | None
 
 
 class Reestr(SQLModel, table=True):
     objectid: int = Field(
-            default=None,
             primary_key=True
             )
     levelid: int = Field(foreign_key='leveltype.level')
@@ -49,25 +48,22 @@ class Reestr(SQLModel, table=True):
 class AdministrativeHierarchy(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
-    path_list: List[int] = Field(sa_column=Column(ARRAY(Integer)))
+    path: List[int] = Field(sa_column=Column(ARRAY(Integer)))
 
 
 class MunicipalHierarchy(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
-    path_list: List[int] = Field(sa_column=Column(ARRAY(Integer)))
+    path: List[int] = Field(sa_column=Column(ARRAY(Integer)))
 
 
 class AddressObject(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
     name: str
@@ -76,52 +72,48 @@ class AddressObject(SQLModel, table=True):
 
 
 class House(SQLModel, table=True):
-    id: int = Field(primary_key=True, default=None)
+    id: int = Field(primary_key=True, default=None, sa_type=BigInteger)
     objectid: int = Field(
-            default=None,
-            foreign_key='reestr.objectid'
+            foreign_key='reestr.objectid',
+            sa_type=BigInteger,
             )
-    housenum: int
-    housetype: int = Field(foreign_key='housetype.id')
-    addnum1: int
-    addtype1: int = Field(foreign_key='addhousetype.id')
-    addnum2: int
-    addtype2: int = Field(foreign_key='addhousetype.id')
+    housenum: str | None = None
+    housetype: int | None = Field(foreign_key='housetype.id', default=None)
+    addnum1: str | None = None
+    addtype1: int | None = Field(foreign_key='addhousetype.id', default=None)
+    addnum2: str | None = None
+    addtype2: int | None = Field(foreign_key='addhousetype.id', default=None)
 
 
 class Carplace(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
-    number: int
+    number: str
 
 
 class Room(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
-    number: int
+    number: str
     roomtype: int = Field(foreign_key='roomtype.id')
 
 
 class Apartment(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
-    number: int
-    aparttype: int = Field(foreign_key='apartmenttype.id')
+    number: str
+    aparttype: int | None = Field(foreign_key='apartmenttype.id', default=None)
 
 
 class Stead(SQLModel, table=True):
     id: int = Field(primary_key=True, default=None)
     objectid: int = Field(
-            default=None,
             foreign_key='reestr.objectid'
             )
-    number: int
+    number: str
