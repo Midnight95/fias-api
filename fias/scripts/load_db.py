@@ -1,7 +1,13 @@
-from fias.app.db import upload_data, create_tables
-
+from fias.app.db.db import (
+        create_tables,
+        upload_types,
+        upload_hierarchy,
+        upload_addresses
+        )
 
 if __name__ == '__main__':
     create_tables()
-    upload_data()
+    upload_types()
+    upload_hierarchy()
+    upload_addresses()
     print('Done!')
