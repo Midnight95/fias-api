@@ -157,39 +157,28 @@ class DBParser:
                     path_string.append(obj.number)
             return ' '.join(filter(None, path_string))
 
-    def cache_entries(self, entry: list[int], cache: dict) -> None:
-        """
-        Creates or updates path cache IN PLACE
-        """
-        if cache in None:
-            cache = {}
-        elif entry in cache.keys():
-            return
-
     def collect_path_strings_by_level(self, levelid: int):
-        with Session(engine) as session:
+        res = []
+        cache = {}
+        with Session(engine) as s:
             # load all objectid from this level
-            objectids = session.exec(
+            objectids = s.exec(
                     select(Reestr.objectid).where(Reestr.levelid == levelid)
                 ).all()
 
             # load all hierarchy paths
-            path_list = session.exec(
+            path_list = s.exec(
                 select(self.hierarchy.path).where(
                     self.hierarchy.objectid.in_(objectids)
                     )
             ).all()
+            for path in path_list:
+                for entry in path:
+                    if cache.get(entry) is None:
+                        cache[entry] = self.collect_current_path(s, entry)
+                res.append(' '.join([cache[id] for id in path]))
 
             # find common prefix and diffrence
-            prefix, difference = self._find_common_prefix_numpy(path_list)
-            prefix_path = []
-            for pfx in prefix_path:
-                prefix_path.append(self.collect_path_string(pfx))
-            res = []
-            for diff in difference:
-                res.append(' '.join(
-                   [prefix_path, self.collect_path_string(diff)])
-                          )
             return res
 
     def reverse_find_path_string(self, string: int):
