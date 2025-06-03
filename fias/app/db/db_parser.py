@@ -114,6 +114,9 @@ class DBParser:
             room_type = self.room_type[obj.roomtype]
             path_string.append(room_type)
             path_string.append(obj.number)
+        elif item_level == 17:
+            obj = self._load_by_objectid(session, objectid, Carplace)
+            path_string.append(obj.number)
         return ' '.join(filter(None, path_string))
 
     def collect_obj_full_path(self, objectid: int):
@@ -154,6 +157,9 @@ class DBParser:
                     obj = self._load_by_objectid(s, item_id, Room)
                     room_type = self.room_type[obj.roomtype]
                     path_string.append(room_type)
+                    path_string.append(obj.number)
+                elif item_level == 17:
+                    obj = self._load_by_objectid(s, item_id, Carplace)
                     path_string.append(obj.number)
             return ' '.join(filter(None, path_string))
 
