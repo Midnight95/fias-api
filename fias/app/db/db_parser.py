@@ -40,7 +40,7 @@ class DBStarter:
             }
 
 
-class DBParser:
+class DBCollector:
     def __init__(
             self,
             reestr: dict,
@@ -71,10 +71,9 @@ class DBParser:
 
     def _load_by_objectid(self, session,  objectid: int, model):
         st = select(model).where(model.objectid == objectid)
-        obj = session.exec(st)
-        return obj.first()
+        return session.exec(st).first()
 
-    def find_obj_path(self, session, objectid: int):
+    def _find_obj_path(self, session, objectid: int):
         st = select(
                 self.hierarchy
                 ).where(self.hierarchy.objectid == objectid)
@@ -82,85 +81,79 @@ class DBParser:
         if path:
             return path.first()
 
-    def collect_current_path(self, session, objectid: int) -> str:
-        path_string = []
-        item_level = self.reestr[objectid]
-        if item_level in range(1, 9):
-            obj = self._load_by_objectid(session, objectid, AddressObject)
-            path_string.append(obj.typename)
-            path_string.append(obj.name)
-        elif item_level == 9:
-            obj = self._load_by_objectid(session, objectid, Stead)
-            path_string.append(obj.number)
-        elif item_level == 10:
-            obj = self._load_by_objectid(session, objectid, House)
-            path_string.append(self.house_type[obj.housetype])
-            path_string.append(obj.housenum)
+    def _get_obj(self, s, objectid: int):
+        level = self.reestr.get(objectid)
+        if level is None:
+            return
+        result = {}
+        if 1 <= level <= 8:
+            obj = self._load_by_objectid(s, objectid, AddressObject)
+            result['typename'] = obj.typename
+            result['name'] = obj.name
+        elif level == 9:
+            obj = self._load_by_objectid(s, objectid, Stead)
+            result['number'] = obj.number
+        elif level == 10:
+            obj = self._load_by_objectid(s, objectid, House)
+            result['house-type'] = self.house_type[obj.housetype]
+            result['housenum'] = obj.housenum
             if obj.addtype1:
-                add_type = self.addhouse_type[obj.addtype1]
-                path_string.append(add_type)
-                path_string.append(obj.addnum1)
+                result['addtype1'] = self.addhouse_type[obj.addtype1]
+                result['addnum1'] = obj.addnum1
             if obj.addtype2:
-                add_type = self.addhouse_type[obj.addtype2]
-                path_string.append(add_type)
-                path_string.append(obj.addnum2)
-        elif item_level == 11:
-            obj = self._load_by_objectid(session, objectid, Apartment)
-            apart_type = self.apart_type[obj.aparttype]
-            path_string.append(apart_type)
-            path_string.append(obj.number)
-        elif item_level == 12:
-            obj = self._load_by_objectid(session, objectid, Room)
-            room_type = self.room_type[obj.roomtype]
-            path_string.append(room_type)
-            path_string.append(obj.number)
-        elif item_level == 17:
-            obj = self._load_by_objectid(session, objectid, Carplace)
-            path_string.append(obj.number)
-        return ' '.join(filter(None, path_string))
+                result['addtype2'] = self.addhouse_type[obj.addtype2]
+                result['addnum2'] = obj.addnum2
+        elif level == 11:
+            obj = self._load_by_objectid(s, objectid, Apartment)
+            result['apart-type'] = self.apart_type[obj.aparttype]
+            result['number'] = obj.number
+        elif level == 12:
+            obj = self._load_by_objectid(s, objectid, Room)
+            result['room-type'] = self.room_type[obj.roomtype]
+            result['number'] = obj.number
+        elif level == 17:
+            obj = self._load_by_objectid(s, objectid, Carplace)
+            result['number'] = obj.number
+
+        return result
+
+
+class DBParser(DBCollector):
+    def __init__(
+            self,
+            reestr: dict,
+            apart_type: dict,
+            room_type: dict,
+            house_type: dict,
+            addhouse_type: dict,
+            h_type: str = 'mun'
+            ):
+        super().__init__(
+                reestr,
+                apart_type,
+                room_type,
+                house_type,
+                addhouse_type,
+                h_type
+                )
+
+    def collect_single_object(self, objectid):
+        with Session(engine) as s:
+            return self._get_obj(s, objectid)
 
     def collect_obj_full_path(self, objectid: int):
         path_string = []
         with Session(engine) as s:
-            path = self.find_obj_path(s, objectid)
+            path = self._find_obj_path(s, objectid)
             if path is None:
                 raise ValueError(
                         f'No hierarchy path found for objectid: {objectid}'
                         )
             for item_id in path.path:
-                item_level = self.reestr[item_id]
-                if item_level in range(1, 9):
-                    obj = self._load_by_objectid(s, item_id, AddressObject)
-                    path_string.append(obj.typename)
-                    path_string.append(obj.name)
-                elif item_level == 9:
-                    obj = self._load_by_objectid(s, item_id, Stead)
-                    path_string.append(obj.number)
-                elif item_level == 10:
-                    obj = self._load_by_objectid(s, item_id, House)
-                    path_string.append(self.house_type[obj.housetype])
-                    path_string.append(obj.housenum)
-                    if obj.addtype1:
-                        add_type = self.addhouse_type[obj.addtype1]
-                        path_string.append(add_type)
-                        path_string.append(obj.addnum1)
-                    if obj.addtype2:
-                        add_type = self.addhouse_type[obj.addtype2]
-                        path_string.append(add_type)
-                        path_string.append(obj.addnum2)
-                elif item_level == 11:
-                    obj = self._load_by_objectid(s, item_id, Apartment)
-                    apart_type = self.apart_type[obj.aparttype]
-                    path_string.append(apart_type)
-                    path_string.append(obj.number)
-                elif item_level == 12:
-                    obj = self._load_by_objectid(s, item_id, Room)
-                    room_type = self.room_type[obj.roomtype]
-                    path_string.append(room_type)
-                    path_string.append(obj.number)
-                elif item_level == 17:
-                    obj = self._load_by_objectid(s, item_id, Carplace)
-                    path_string.append(obj.number)
+                obj_data = self._get_obj(s, item_id)
+                part = ' '.join(filter(None, obj_data.values()))
+                path_string.append(part)
+
             return ' '.join(filter(None, path_string))
 
     def collect_path_strings_by_level(self, levelid: int):
@@ -168,24 +161,45 @@ class DBParser:
         cache = {}
         with Session(engine) as s:
             # load all objectid from this level
-            objectids = s.exec(
+            objects = s.exec(
                     select(Reestr.objectid).where(Reestr.levelid == levelid)
                 ).all()
 
             # load all hierarchy paths
             path_list = s.exec(
                 select(self.hierarchy.path).where(
-                    self.hierarchy.objectid.in_(objectids)
+                    self.hierarchy.objectid.in_(objects)
                     )
             ).all()
             for path in path_list:
-                for entry in path:
-                    if cache.get(entry) is None:
-                        cache[entry] = self.collect_current_path(s, entry)
-                res.append(' '.join([cache[id] for id in path]))
+                for item_id in path:
+                    if cache.get(item_id) is None:
+                        obj_data = self._get_obj(s, item_id)
+                        cache[item_id] = ' '.join(
+                                filter(None, obj_data.values())
+                                )
+
+                res.append({
+                    'objectid': item_id,
+                    'address': ' '.join([cache[id] for id in path])
+                        }
+                    )
 
             # find common prefix and diffrence
             return res
+
+    def collect_obj_by_level(self, levelid: int):
+        res = []
+        with Session(engine) as s:
+            # load all objectid from this level
+            objects = s.exec(
+                    select(Reestr.objectid).where(Reestr.levelid == levelid)
+                ).all()
+            for object_id in objects:
+                current = {'objectid': object_id}
+                current.update(self._get_obj(s, object_id))
+                res.append(current)
+        return res
 
     def reverse_find_path_string(self, string: int):
         pass

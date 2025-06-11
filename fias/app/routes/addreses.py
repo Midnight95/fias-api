@@ -79,8 +79,8 @@ async def get_carplace(session: Session = Depends(get_session)):
     return session.exec(select(Carplace)).all()
 
 
-@router.get("/{objectid}/obj-path")
-async def get_address_path(
+@router.get("/{objectid}/obj-address-string")
+async def get_object_full_address(
             objectid: int,
             parser: DBParser = Depends(get_db_cache)
         ):
@@ -100,13 +100,34 @@ async def get_address_path(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{levelid}/level-path")
-async def get_level_paths(
+@router.get("/{objectid}/obj-address")
+async def get_obj_address(
+            objectid: int,
+            parser: DBParser = Depends(get_db_cache)
+        ):
+    """
+    Get single object by objectid. Level 1 to 8
+    Parameters:
+    - objectid: Address object ID from FIAS Reestr
+    - hierarchy: 'mun' for municipal hierarchy (default),
+                 'adm' for administrative
+    """
+    try:
+        address_string = parser.collect_single_object(objectid)
+        if not address_string:
+            raise HTTPException(status_code=404, detail="Address not found")
+        return {"objectid": objectid, "address": address_string}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{levelid}/level-strings")
+async def get_level_strings(
         levelid: int,
         parser: DBParser = Depends(get_db_cache)
         ):
     """
-    Get formatted list of addresses for single levelid
+    Get formatted path list of selected levelid
     Parameters:
     - levelid: Level ID from FIAS Reestr (1-12, 17)
     - hierarchy: 'mun' for municipal hierarchy (default),
@@ -115,6 +136,28 @@ async def get_level_paths(
     """
     try:
         level_list = parser.collect_path_strings_by_level(levelid)
+        if not level_list:
+            raise HTTPException(status_code=404, detail="Address not found")
+        return {"levelid": levelid, "address list": level_list}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{levelid}/level-objects")
+async def get_level_objects(
+        levelid: int,
+        parser: DBParser = Depends(get_db_cache)
+        ):
+    """
+    Get formatted object list of selected levelid
+    Parameters:
+    - levelid: Level ID from FIAS Reestr (1-12, 17)
+    - hierarchy: 'mun' for municipal hierarchy (default),
+                 'adm' for administrative
+    Not advised to be used from level 6 to 17
+    """
+    try:
+        level_list = parser.collect_obj_by_level(levelid)
         if not level_list:
             raise HTTPException(status_code=404, detail="Address not found")
         return {"levelid": levelid, "address list": level_list}
